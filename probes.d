@@ -1,5 +1,5 @@
 #include <inttypes.h>
 
 provider hello {
-  probe add(int64_t x, int64_t y);
+  probe incr(uint64_t tid, int64_t value) /* => int64_t */;
 }
