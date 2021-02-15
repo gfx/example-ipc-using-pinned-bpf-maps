@@ -52,7 +52,8 @@ static void event_cb(void *, void *data, int len)
 {
   assert(sizeof(event_t) <= (uint64_t)len);
   auto ev = static_cast<const event_t *>(data);
-  printf("tracer: key=%" PRIu64 " value+1=%" PRId64 "\n", ev->key, ev->value);
+
+  // printf("tracer: key=%" PRIu64 " value+1=%" PRId64 "\n", ev->key, ev->value);
 }
 
 static int sys_pidfd_open(int pid, unsigned int flags)
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
   printf("tracer: attached\n");
 
   {
-    auto ret = bpf.open_perf_buffer("events", event_cb);
+    auto ret = bpf.open_perf_buffer("events", event_cb, nullptr, nullptr, 256);
     if (ret.code() != 0)
     {
       fprintf(stderr, "tracer: error: open_perf_buffer: %s\n", ret.msg().c_str());
