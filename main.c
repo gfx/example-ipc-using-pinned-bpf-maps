@@ -1,23 +1,17 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cinttypes>
-#include <cerrno>
-#include <cassert>
+#include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
+#include <errno.h>
+#include <assert.h>
 
-#include <bcc/libbpf.h>
-
-extern "C"
-{
 #include <unistd.h>
 #include <sys/sysinfo.h>
 #include <sys/syscall.h>
 #include <pthread.h>
-}
+
+#include <bcc/libbpf.h>
 
 #include "probes.h"
-
-using namespace std;
-
 
 int main()
 {
@@ -42,7 +36,7 @@ int main()
   } while (fd < 0);
 
   int64_t value = 0;
-  for (auto i = 0; i < 10; i++)
+  for (int i = 0; i < 10; i++)
   {
     usleep(1000);
     uint64_t tid = pthread_self();

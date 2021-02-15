@@ -4,8 +4,8 @@ CXXFLAGS=-Wall -Wextra -g3 -fsanitize=address
 
 all: main tracer
 
-main: main.cc probes.o probes.h
-	$(CXX) $(CXXFLAGS) -lbcc -o $@ main.cc probes.o
+main: main.c probes.o probes.h
+	$(CC) $(CXXFLAGS) -lbcc -o $@ $< probes.o
 
 tracer: tracer.cc
 	$(CXX) $(CXXFLAGS) -lbcc -o $@ $<
