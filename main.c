@@ -40,7 +40,7 @@ void *work(void *_ctx)
 {
   struct context_t *ctx = _ctx;
 
-  uint64_t tid = pthread_self();
+  uint64_t tid = syscall(SYS_gettid);
 
   int fd = bpf_obj_get("/sys/fs/bpf/hello_map");
   if (fd < 0)
@@ -55,14 +55,14 @@ void *work(void *_ctx)
   uint64_t elapsed2 = 0;
   uint64_t control = 0;
 
-  uint64_t count = 10000;
+  uint64_t count = 100;
   for (uint64_t i = 0; i < count; i++)
   {
     usleep(1);
 
     uint64_t t0 = bench_time();
 
-    HELLO_INCR(tid, value);
+    HELLO_INCR(value);
 
     uint64_t t1 = bench_time();
 
@@ -97,7 +97,7 @@ void *work(void *_ctx)
 
 int main()
 {
-  printf("main: pid=%d, tid=%" PRIu64 " \n", getpid(), pthread_self());
+  printf("main: pid=%d\n", getpid());
 
   // wait for tracer to be attached to this process
   while (!HELLO_INCR_ENABLED())
@@ -125,7 +125,7 @@ int main()
 
   usleep(1000);
 
-  struct context_t contexts[32] = {};
+  struct context_t contexts[4] = {};
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {
     struct context_t *ctx = &contexts[i];
@@ -141,6 +141,8 @@ int main()
     struct context_t *ctx = &contexts[i];
     pthread_join(ctx->tid, NULL);
   }
+
+  usleep(1000);
 
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {

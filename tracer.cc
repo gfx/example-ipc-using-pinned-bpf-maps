@@ -18,24 +18,32 @@ extern "C"
 using namespace std;
 
 const char *bpf_program = R"(
+#include <linux/sched.h>
+
 BPF_PERF_OUTPUT(events);
 
 BPF_HASH(hash, uint64_t, int64_t, 1024);
 
 struct event_t {
-  uint64_t key;
   int64_t value;
+
+  uint64_t pid;
+  uint64_t tid;
 };
 
 int handle_incr(struct pt_regs *ctx)
 {
-  struct event_t ev = {};
+  const struct task_struct *task = (const struct task_struct*)bpf_get_current_task();
 
-  bpf_usdt_readarg(1, ctx, &ev.key);
-  bpf_usdt_readarg(2, ctx, &ev.value);
+  struct event_t ev = {
+    .pid = task->tgid,
+    .tid = task->pid,
+  };
+
+  bpf_usdt_readarg(1, ctx, &ev.value);
 
   ev.value++;
-  hash.insert(&ev.key, &ev.value);
+  hash.insert(&ev.tid, &ev.value);
 
   events.perf_submit(ctx, &ev, sizeof(ev));
   return 0;
@@ -44,8 +52,10 @@ int handle_incr(struct pt_regs *ctx)
 
 struct event_t
 {
-  uint64_t key;
   int64_t value;
+
+  uint64_t pid;
+  uint64_t tid;
 };
 
 static void event_cb(void *, void *data, int len)
@@ -53,7 +63,10 @@ static void event_cb(void *, void *data, int len)
   assert(sizeof(event_t) <= (uint64_t)len);
   auto ev = static_cast<const event_t *>(data);
 
-  // printf("tracer: key=%" PRIu64 " value+1=%" PRId64 "\n", ev->key, ev->value);
+  if (true) {
+    printf("tracer: [pid=%" PRIu64 ",tid=%" PRIu64 "] value+1=%" PRId64 "\n",
+          ev->pid, ev->tid, ev->value);
+  }
 }
 
 static int sys_pidfd_open(int pid, unsigned int flags)
@@ -140,7 +153,8 @@ int main(int argc, char **argv)
   {
     perf_buffer->poll(100);
 
-    if (!proc_is_alive(pid_fd)) {
+    if (!proc_is_alive(pid_fd))
+    {
       break;
     }
   }
