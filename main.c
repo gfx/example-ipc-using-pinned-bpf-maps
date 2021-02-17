@@ -33,7 +33,7 @@ struct context_t
   uint64_t count;
   uint64_t elapsed1; // to emit USDT events
   uint64_t elapsed2; // to to lookup and delete a BPF object
-  uint64_t control; // control group (calling time(2))
+  uint64_t control;  // control group (calling time(2))
 };
 
 void *work(void *_ctx)
@@ -45,9 +45,11 @@ void *work(void *_ctx)
   int fd = bpf_obj_get("/sys/fs/bpf/hello_map");
   if (fd < 0)
   {
-    perror("main: bpf_lookup_elem failed");
+    perror("main: bpf_obj_get failed");
     pthread_exit(NULL);
   }
+
+  printf("main: thread[%" PRIuMAX "] (tid=%" PRIu64 ") start\n", (uintmax_t)ctx->tid, tid);
 
   int64_t value = 0;
 
@@ -112,7 +114,7 @@ int main()
     fd = bpf_obj_get("/sys/fs/bpf/hello_map");
     if (fd < 0 && errno != ENOENT)
     {
-      perror("bpf_obj_get failed");
+      perror("main: bpf_obj_get failed");
       exit(1);
     }
     usleep(1000);
@@ -131,7 +133,7 @@ int main()
     struct context_t *ctx = &contexts[i];
     if (pthread_create(&ctx->tid, NULL, &work, ctx) != 0)
     {
-      perror("pthread_create failed");
+      perror("main: pthread_create failed");
       exit(1);
     }
   }
@@ -147,6 +149,10 @@ int main()
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {
     struct context_t *ctx = &contexts[i];
+    if (ctx->count == 0) {
+      printf("thread[%" PRIu64 "] has errors\n", ctx->tid);
+      continue;
+    }
     printf("thread[%" PRIu64 "] value=%" PRIu64 " emit=%" PRIu64 "ns, bpf_map_*=%" PRIu64 "ns (time(2)=%" PRIu64 "ns)\n",
            ctx->tid, ctx->retval, ctx->elapsed1 / ctx->count, ctx->elapsed2 / ctx->count, ctx->control / ctx->count);
   }

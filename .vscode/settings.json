@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "Dockerfile.*": "dockerfile",
+    "*.mt": "html",
+    "*.tcc": "cpp",
+    "deque": "cpp",
+    "string": "cpp",
+    "unordered_map": "cpp",
+    "vector": "cpp"
+  }
+}

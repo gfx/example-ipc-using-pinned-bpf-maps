@@ -22,7 +22,7 @@ const char *bpf_program = R"(
 
 BPF_PERF_OUTPUT(events);
 
-BPF_HASH(hash, uint64_t, int64_t, 1024);
+BPF_TABLE("hash", uint64_t, int64_t, hash, 1024);
 
 struct event_t {
   int64_t value;
@@ -162,6 +162,7 @@ int main(int argc, char **argv)
 
   unlink("/sys/fs/bpf/hello_map"); // make sure it's removed before attaching USDTs
   close(pid_fd);
+  bpf.detach_usdt_all();
 
   return 0;
 }
