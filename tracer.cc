@@ -22,13 +22,13 @@ const char *bpf_program = R"(
 
 BPF_PERF_OUTPUT(events);
 
-BPF_TABLE("hash", uint64_t, int64_t, hash, 1024);
+BPF_TABLE("hash", pid_t, int64_t, hash, 1024);
 
 struct event_t {
   int64_t value;
 
-  uint64_t pid;
-  uint64_t tid;
+  pid_t pid;
+  pid_t tid;
 };
 
 int handle_incr(struct pt_regs *ctx)
@@ -54,8 +54,8 @@ struct event_t
 {
   int64_t value;
 
-  uint64_t pid;
-  uint64_t tid;
+  pid_t pid;
+  pid_t tid;
 };
 
 static void event_cb(void *, void *data, int len)
@@ -65,7 +65,7 @@ static void event_cb(void *, void *data, int len)
 
   if (true) {
     printf("tracer: [pid=%" PRIu64 ",tid=%" PRIu64 "] value+1=%" PRId64 "\n",
-          ev->pid, ev->tid, ev->value);
+          (uint64_t)ev->pid, (uint64_t)ev->tid, ev->value);
   }
 }
 
