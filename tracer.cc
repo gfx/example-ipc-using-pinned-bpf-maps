@@ -43,7 +43,7 @@ int handle_incr(struct pt_regs *ctx)
   bpf_usdt_readarg(1, ctx, &ev.value);
 
   ev.value++;
-  hash.insert(&ev.tid, &ev.value);
+  hash.insert(&task->pid, &ev.value);
 
   events.perf_submit(ctx, &ev, sizeof(ev));
   return 0;
