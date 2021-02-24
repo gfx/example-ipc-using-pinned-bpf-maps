@@ -7,13 +7,10 @@ extern "C"
 {
 #include <unistd.h>
 #include <poll.h>
+#include <sys/syscall.h>
 }
 
 #include <bcc/BPF.h>
-
-#ifndef __NR_pidfd_open
-#define __NR_pidfd_open 434
-#endif
 
 using namespace std;
 
