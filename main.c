@@ -57,7 +57,7 @@ void *work(void *_ctx)
   uint64_t elapsed2 = 0;
   uint64_t control = 0;
 
-  uint64_t count = 100;
+  uint64_t count = 10;
   for (uint64_t i = 0; i < count; i++)
   {
     usleep(1);
@@ -73,7 +73,6 @@ void *work(void *_ctx)
       perror("main: bpf_lookup_elem failed");
       pthread_exit(NULL);
     }
-    bpf_delete_elem(fd, &tid);
 
     uint64_t t2 = bench_time();
 
@@ -127,7 +126,7 @@ int main()
 
   usleep(1000);
 
-  struct context_t contexts[4] = {};
+  struct context_t contexts[100] = {}; // number of workers
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {
     struct context_t *ctx = &contexts[i];
