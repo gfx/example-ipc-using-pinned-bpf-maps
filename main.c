@@ -39,6 +39,7 @@ struct context_t
   uint64_t control;  // control group (calling time(2))
 };
 
+// worker main
 void *work(void *_ctx)
 {
   struct context_t *ctx = _ctx;
@@ -110,7 +111,7 @@ int main()
     usleep(1000);
   }
 
-  // wait for the BPF pinned object file to be created
+  // wait for the BPF pinned object file to be created by the tracer
   int fd;
   do
   {
@@ -123,7 +124,7 @@ int main()
     usleep(1000);
   } while (fd < 0);
 
-  // fill the map
+  // fill the map before doing something
   for (int i = 0; i < 1024*1024; i++) {
     pid_t fake_pid = i + 1;
     int64_t value = -1;
@@ -139,6 +140,7 @@ int main()
 
   usleep(1000);
 
+  // let workers start
   struct context_t contexts[32] = {}; // number of workers
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {
