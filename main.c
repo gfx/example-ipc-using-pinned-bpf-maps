@@ -127,7 +127,7 @@ int main()
     usleep(1000);
   } while (fd < 0);
 
-  // fill the map before doing something
+  // insert dummy values to the map before doing something
   for (int i = 0; i < 1024*1024; i++) {
     pid_t fake_pid = i + 1;
     int64_t value = -1;
