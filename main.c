@@ -65,6 +65,9 @@ void *work(void *_ctx)
   for (uint64_t i = 0; i < count; i++)
   {
     usleep(1);
+
+    // delete -> probe -> lookup
+
     bpf_delete_elem(fd, &tid);
 
     uint64_t t0 = bench_time();
