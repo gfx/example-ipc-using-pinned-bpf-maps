@@ -11,4 +11,5 @@ if ($main_pid == 0) {
   exec("./main") or die $!;
 }
 
+# exec("strace", "-o", "strace-tracer.log", "./tracer", $main_pid) or die "cannot run tracer: $!";
 exec("./tracer", $main_pid) or die "cannot run tracer: $!";
