@@ -7,6 +7,8 @@
     "string": "cpp",
     "unordered_map": "cpp",
     "vector": "cpp",
-    "libbpf.h": "c"
+    "libbpf.h": "c",
+    "unistd_ext.h": "c",
+    "inttypes.h": "c"
   }
 }
