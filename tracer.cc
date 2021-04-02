@@ -19,28 +19,26 @@ const char *bpf_program = R"(
 
 BPF_PERF_OUTPUT(events);
 
-BPF_TABLE("lru_hash", pid_t, int64_t, hash, 1024);
+// size=400 seems enough for 32 threads in main.c
+BPF_F_TABLE("lru_hash", pid_t, int64_t, hash, 1024, 0);
 
 struct event_t {
-  int64_t value;
-
-  pid_t pid;
   pid_t tid;
+  int64_t value;
 };
 
 int handle_incr(struct pt_regs *ctx)
 {
-  const struct task_struct *task = (const struct task_struct*)bpf_get_current_task();
-
-  struct event_t ev = {
-    .pid = task->tgid,
-    .tid = task->pid,
-  };
-
-  bpf_usdt_readarg(1, ctx, &ev.value);
+  struct event_t ev = {};
+  bpf_usdt_readarg(1, ctx, &ev.tid);
+  bpf_usdt_readarg(2, ctx, &ev.value);
 
   ev.value++;
-  hash.insert(&ev.tid, &ev.value);
+
+  int64_t ret = hash.insert(&ev.tid, &ev.value);
+  if (ret != 0) {
+    bpf_trace_printk("failed to insert with errno=%ld\n", -ret);
+  }
 
   events.perf_submit(ctx, &ev, sizeof(ev));
   return 0;
@@ -49,10 +47,8 @@ int handle_incr(struct pt_regs *ctx)
 
 struct event_t
 {
-  int64_t value;
-
-  pid_t pid;
   pid_t tid;
+  int64_t value;
 };
 
 static void event_cb(void *, void *data, int len)
@@ -60,9 +56,9 @@ static void event_cb(void *, void *data, int len)
   assert(sizeof(event_t) <= (uint64_t)len);
   auto ev = static_cast<const event_t *>(data);
 
-  if (true) {
-    printf("tracer: [pid=%" PRIu64 ",tid=%" PRIu64 "] value+1=%" PRId64 "\n",
-          (uint64_t)ev->pid, (uint64_t)ev->tid, ev->value);
+  if (false) {
+    printf("tracer: [tid=%" PRIu64 "] value+1=%" PRId64 "\n",
+          (uint64_t)ev->tid, ev->value);
   }
 }
 

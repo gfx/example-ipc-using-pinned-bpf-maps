@@ -1,5 +1,8 @@
 #include <inttypes.h>
 
 provider hello {
-  probe incr(int64_t value) /* => int64_t via a pinned BPF map */;
+  /**
+   * returns int64_t via a pinned BPF map */
+   */
+   probe incr(pid_t tid, int64_t value);
 }

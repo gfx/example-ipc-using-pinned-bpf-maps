@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
@@ -9,6 +11,7 @@
 #include <unistd.h>
 #include <sys/sysinfo.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <sys/time.h>
 
 #include <bcc/libbpf.h>
@@ -40,7 +43,7 @@ void *work(void *_ctx)
 {
   struct context_t *ctx = _ctx;
 
-  uint64_t tid = syscall(SYS_gettid);
+  pid_t tid = gettid();
 
   int fd = bpf_obj_get("/sys/fs/bpf/hello_map");
   if (fd < 0)
@@ -49,7 +52,7 @@ void *work(void *_ctx)
     pthread_exit(NULL);
   }
 
-  printf("main: thread[%" PRIuMAX "] (tid=%" PRIu64 ") start\n", (uintmax_t)ctx->tid, tid);
+  printf("main: thread[%" PRIuMAX "] (tid=%" PRIuMAX ") start\n", (uintmax_t)ctx->tid, (uintmax_t)tid);
 
   int64_t value = 0;
 
@@ -57,14 +60,15 @@ void *work(void *_ctx)
   uint64_t elapsed2 = 0;
   uint64_t control = 0;
 
-  uint64_t count = 10;
+  uint64_t count = 10000;
   for (uint64_t i = 0; i < count; i++)
   {
     usleep(1);
+    bpf_delete_elem(fd, &tid);
 
     uint64_t t0 = bench_time();
 
-    HELLO_INCR(value);
+    HELLO_INCR(tid, value);
 
     uint64_t t1 = bench_time();
 
@@ -119,6 +123,15 @@ int main()
     usleep(1000);
   } while (fd < 0);
 
+  // fill the map
+  for (int i = 0; i < 1024*1024; i++) {
+    pid_t fake_pid = i + 1;
+    int64_t value = -1;
+    if (bpf_update_elem(fd, &fake_pid, &value, BPF_ANY) != 0) {
+      perror("BPF_MAP_UPDATE_ELEM failed");
+    }
+  }
+
   if (close(fd) != 0)
   {
     perror("main: close failed");
@@ -126,7 +139,7 @@ int main()
 
   usleep(1000);
 
-  struct context_t contexts[100] = {}; // number of workers
+  struct context_t contexts[32] = {}; // number of workers
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {
     struct context_t *ctx = &contexts[i];
