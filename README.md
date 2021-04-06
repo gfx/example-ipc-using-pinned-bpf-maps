@@ -12,6 +12,6 @@ TBD
 ## Usage
 
 ```
-make && ./run.pl
+make && sudo ./run.pl
 ```
 
