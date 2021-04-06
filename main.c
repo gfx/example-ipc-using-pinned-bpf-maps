@@ -167,10 +167,10 @@ int main()
   {
     struct context_t *ctx = &contexts[i];
     if (ctx->count == 0) {
-      printf("thread[%" PRIu64 "] has errors\n", ctx->tid);
+      printf("main: thread[%" PRIu64 "] has errors\n", ctx->tid);
       continue;
     }
-    printf("thread[%" PRIu64 "] value=%" PRIu64 " emit=%" PRIu64 "ns, bpf_map_*=%" PRIu64 "ns (time(2)=%" PRIu64 "ns)\n",
+    printf("main: thread[%" PRIu64 "] value=%" PRIu64 " emit=%" PRIu64 "ns, bpf_map_*=%" PRIu64 "ns (time(2)=%" PRIu64 "ns)\n",
            ctx->tid, ctx->retval, ctx->elapsed1 / ctx->count, ctx->elapsed2 / ctx->count, ctx->control / ctx->count);
   }
 
