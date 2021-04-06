@@ -20,11 +20,13 @@ const char *bpf_program = R"(
 BPF_PERF_OUTPUT(events);
 
 // size=400 seems enough for 32 threads in main.c
+// it could cause ENOMEM (errno=12)
 BPF_F_TABLE("lru_hash", pid_t, int64_t, hash, 1024, 0);
 
 struct event_t {
   pid_t tid;
   int64_t value;
+  int64_t insert_ret;
 };
 
 int handle_incr(struct pt_regs *ctx)
@@ -34,11 +36,9 @@ int handle_incr(struct pt_regs *ctx)
   bpf_usdt_readarg(2, ctx, &ev.value);
 
   ev.value++;
-
-  int64_t ret = hash.insert(&ev.tid, &ev.value);
-  if (ret != 0) {
-    bpf_trace_printk("failed to insert with errno=%ld\n", -ret);
-  }
+  ev.insert_ret = hash.insert(&ev.tid, &ev.value);
+  if (ev.insert_ret != 0)
+    bpf_trace_printk("failed to insert with errno=%ld\n", -ev.insert_ret);
 
   events.perf_submit(ctx, &ev, sizeof(ev));
   return 0;
@@ -49,12 +49,18 @@ struct event_t
 {
   pid_t tid;
   int64_t value;
+  int64_t insert_ret;
 };
 
 static void event_cb(void *, void *data, int len)
 {
   assert(sizeof(event_t) <= (uint64_t)len);
   auto ev = static_cast<const event_t *>(data);
+
+  if (ev->insert_ret != 0) {
+    printf("tracer: [tid=%" PRIu64 "] vailed ot insert: errno=%" PRId64 " strderr(errno)=%s\n",
+      (uint64_t)ev->tid, -ev->insert_ret, strerror(-ev->insert_ret));
+  }
 
   if (false) {
     printf("tracer: [tid=%" PRIu64 "] value+1=%" PRId64 "\n",
