@@ -30,6 +30,7 @@ static uint64_t bench_time()
 struct context_t
 {
   pthread_t tid;
+  int bpf_fd;
 
   int64_t retval;
 
@@ -45,13 +46,7 @@ void *work(void *_ctx)
   struct context_t *ctx = _ctx;
 
   pid_t tid = gettid();
-
-  int fd = bpf_obj_get("/sys/fs/bpf/hello_map");
-  if (fd < 0)
-  {
-    perror("main: bpf_obj_get failed");
-    pthread_exit(NULL);
-  }
+  int fd = ctx->bpf_fd;
 
   printf("main: thread[%" PRIuMAX "] (tid=%" PRIuMAX ") start\n", (uintmax_t)ctx->tid, (uintmax_t)tid);
 
@@ -135,12 +130,6 @@ int main()
       perror("BPF_MAP_UPDATE_ELEM failed");
     }
   }
-
-  if (close(fd) != 0)
-  {
-    perror("main: close failed");
-  }
-
   usleep(1000);
 
   // let workers start
@@ -148,6 +137,7 @@ int main()
   for (size_t i = 0; i < (sizeof(contexts) / sizeof(*contexts)); i++)
   {
     struct context_t *ctx = &contexts[i];
+    ctx->bpf_fd = fd;
     if (pthread_create(&ctx->tid, NULL, &work, ctx) != 0)
     {
       perror("main: pthread_create failed");
@@ -172,6 +162,11 @@ int main()
     }
     printf("main: thread[%" PRIu64 "] value=%" PRIu64 " emit=%" PRIu64 "ns, bpf_map_*=%" PRIu64 "ns (time(2)=%" PRIu64 "ns)\n",
            ctx->tid, ctx->retval, ctx->elapsed1 / ctx->count, ctx->elapsed2 / ctx->count, ctx->control / ctx->count);
+  }
+
+  if (close(fd) != 0)
+  {
+    perror("main: close failed");
   }
 
   printf("main: exiting\n");
